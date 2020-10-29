@@ -9,8 +9,8 @@
           @start="dragging = true"
           @end="dragging = false"
       >
-        <div v-for="(item, index) in questionList" :key="index" class="question-wrp">
-          <div @click="readyEdit(index)">
+        <div v-for="(item, index) in questionList" :key="index" class="question-wrp" @click="readyEdit(index)">
+          <div>
             <div v-if="isEditingIndex === index">
               <div> 题目 <el-input v-model="inputData.question" size="medium" ></el-input></div>
               <div>
@@ -66,7 +66,7 @@
         </div>
 
       </draggable>
-      <el-button @click="questionList.push({question: '', options: []})">新增问题</el-button>
+      <el-button @click="addQuestion">新增问题</el-button>
     </el-col>
     <el-col :md="12">
       <div>预览</div>
@@ -92,7 +92,6 @@
 
 <script>
 import draggable from 'vuedraggable';
-let id = 1;
 export default {
   name: "simple",
   display: "Simple",
@@ -126,36 +125,48 @@ export default {
     };
   },
   computed: {
-    draggingInfo() {
-      return this.dragging ? "under drag" : "";
+    canSave() {
+      return this.inputData.question && this.inputOptions.length
     }
   },
   methods: {
     appendOptionToInputData() {
       this.inputOptions.push({text: ''})
     },
-    add: function() {
-      this.list.push({ name: "Juan " + id, id: id++ });
-    },
-    replace: function() {
-      this.list = [{ name: "Edgard", id: id++ }];
+    addQuestion() {
+      this.questionList.push({
+        question: '', options: [],
+        __new: true
+      })
+      this.isEditingIndex = this.questionList.length - 1;
     },
     readyEdit(index) {
+      if (this.isEditingIndex !== -1) {
+        return;
+      }
       this.isEditingIndex = index;
       this.inputData.question = this.questionList[index].question;
       this.inputOptions = this.questionList[index].options;
     },
     cancelEdit(index) {
-      console.log(index)
+      if (this.questionList[index].__new) {
+        this.questionList.splice(index, 1);
+      }
+      console.log(index);
       this.isEditingIndex = -1;
       this.inputData.question = '';
       this.inputOptions = [];
     },
     confirmEdit(index) {
-      // 保存题目，保存选项
-      this.questionList[index].question = this.inputData.question
-      this.questionList[index].options = [...this.inputOptions];
-      this.isEditingIndex = -1
+      if (this.questionList[index].__new) {
+        if (this.canSave) {
+          // 保存题目，保存选项
+          delete this.questionList[index].__new;
+          this.questionList[index].question = this.inputData.question;
+          this.questionList[index].options = [...this.inputOptions];
+          this.isEditingIndex = -1
+        }
+      }
     },
     checkMove: function(e) {
       window.console.log("Future index: " + e.draggedContext.futureIndex);
